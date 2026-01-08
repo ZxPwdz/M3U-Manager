@@ -1,0 +1,67 @@
+#EXTM3U
+
+#EXTINF:-1 tvg-id="bbc1.uk" tvg-name="BBC One" tvg-logo="https://i.imgur.com/7T6NxCi.png" group-title="UK News",BBC One HD
+http://example.com/stream/bbc1
+
+#EXTINF:-1 tvg-id="bbc2.uk" tvg-name="BBC Two" tvg-logo="https://i.imgur.com/0XQOLSR.png" group-title="UK News",BBC Two HD
+http://example.com/stream/bbc2
+
+#EXTINF:-1 tvg-id="skynews.uk" tvg-name="Sky News" tvg-logo="https://i.imgur.com/LKzlgS4.png" group-title="UK News",Sky News
+http://example.com/stream/skynews
+
+#EXTINF:-1 tvg-id="cnn.us" tvg-name="CNN" tvg-logo="https://i.imgur.com/vyPqBOR.png" group-title="US News",CNN International
+http://example.com/stream/cnn
+
+#EXTINF:-1 tvg-id="foxnews.us" tvg-name="Fox News" tvg-logo="https://i.imgur.com/tFY6xnK.png" group-title="US News",Fox News
+http://example.com/stream/foxnews
+
+#EXTINF:-1 tvg-id="espn.us" tvg-name="ESPN" tvg-logo="https://i.imgur.com/HN2jNHn.png" group-title="Sports",ESPN HD
+http://example.com/stream/espn
+
+#EXTINF:-1 tvg-id="skysports1.uk" tvg-name="Sky Sports 1" tvg-logo="https://i.imgur.com/tM7yMfS.png" group-title="Sports",Sky Sports Main Event
+http://example.com/stream/skysports1
+
+#EXTINF:-1 tvg-id="skysports2.uk" tvg-name="Sky Sports 2" tvg-logo="https://i.imgur.com/tM7yMfS.png" group-title="Sports",Sky Sports Football
+http://example.com/stream/skysports2
+
+#EXTINF:-1 tvg-id="btsport1.uk" tvg-name="BT Sport 1" tvg-logo="https://i.imgur.com/9IB9vyV.png" group-title="Sports",BT Sport 1 HD
+http://example.com/stream/btsport1
+
+#EXTINF:-1 tvg-id="eurosport1" tvg-name="Eurosport 1" tvg-logo="https://i.imgur.com/EGvGhEd.png" group-title="Sports",Eurosport 1
+http://example.com/stream/eurosport1
+
+#EXTINF:-1 tvg-id="hbo.us" tvg-name="HBO" tvg-logo="https://i.imgur.com/LjcQ7Tf.png" group-title="Movies",HBO HD
+http://example.com/stream/hbo
+
+#EXTINF:-1 tvg-id="showtime.us" tvg-name="Showtime" tvg-logo="https://i.imgur.com/CBuQ6cN.png" group-title="Movies",Showtime HD
+http://example.com/stream/showtime
+
+#EXTINF:-1 tvg-id="starz.us" tvg-name="Starz" tvg-logo="https://i.imgur.com/v6RBZ9f.png" group-title="Movies",Starz HD
+http://example.com/stream/starz
+
+#EXTINF:-1 tvg-id="skymovies.uk" tvg-name="Sky Cinema" tvg-logo="https://i.imgur.com/6GG9uQi.png" group-title="Movies",Sky Cinema Premiere
+http://example.com/stream/skycinema
+
+#EXTINF:-1 tvg-id="discovery.us" tvg-name="Discovery" tvg-logo="https://i.imgur.com/SqXqJTc.png" group-title="Documentary",Discovery Channel
+http://example.com/stream/discovery
+
+#EXTINF:-1 tvg-id="natgeo.us" tvg-name="National Geographic" tvg-logo="https://i.imgur.com/RHNTHPP.png" group-title="Documentary",National Geographic HD
+http://example.com/stream/natgeo
+
+#EXTINF:-1 tvg-id="history.us" tvg-name="History" tvg-logo="https://i.imgur.com/YsRVGtY.png" group-title="Documentary",History Channel
+http://example.com/stream/history
+
+#EXTINF:-1 tvg-id="cartoon.us" tvg-name="Cartoon Network" tvg-logo="https://i.imgur.com/V3FxGYq.png" group-title="Kids",Cartoon Network
+http://example.com/stream/cartoon
+
+#EXTINF:-1 tvg-id="disney.us" tvg-name="Disney Channel" tvg-logo="https://i.imgur.com/m11PDnH.png" group-title="Kids",Disney Channel HD
+http://example.com/stream/disney
+
+#EXTINF:-1 tvg-id="nick.us" tvg-name="Nickelodeon" tvg-logo="https://i.imgur.com/qS7tnYp.png" group-title="Kids",Nickelodeon HD
+http://example.com/stream/nick
+
+#EXTINF:-1 tvg-id="mtv.us" tvg-name="MTV" tvg-logo="https://i.imgur.com/TbL0Ow4.png" group-title="Entertainment",MTV HD
+http://example.com/stream/mtv
+
+#EXTINF:-1 tvg-id="comedy.us" tvg-name="Comedy Central" tvg-logo="https://i.imgur.com/K1h3Qnp.png" group-title="Entertainment",Comedy Central
+http://example.com/stream/comedy

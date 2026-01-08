@@ -1,0 +1,192 @@
+/* Custom styles for M3U Manager */
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Touch-friendly sizing */
+button, input, select, textarea {
+    min-height: 44px;
+}
+
+/* Channel card swipe animation */
+.channel-card {
+    touch-action: pan-y;
+    user-select: none;
+}
+
+.channel-card > div {
+    transition: transform 0.1s ease-out;
+}
+
+/* Prevent text selection during swipe */
+.channel-card.swiping {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Loading skeleton animation */
+@keyframes skeleton-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Drag handle for reordering */
+.drag-handle {
+    cursor: grab;
+    touch-action: none;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Swipe action indicators */
+.swipe-action-left,
+.swipe-action-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.swipe-action-left {
+    left: 0;
+    background: #22c55e;
+}
+
+.swipe-action-right {
+    right: 0;
+    background: #ef4444;
+}
+
+/* FAB button pulse */
+@keyframes fab-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+/* Image placeholder */
+.img-placeholder {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+}
+
+/* Form focus states */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+}
+
+/* Modal backdrop blur */
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    /* Ensure touch targets are large enough on mobile */
+    .touch-target {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Bottom sheet modal on mobile */
+    .bottom-sheet {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+}
+
+/* Dark mode form elements */
+input[type="checkbox"] {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* Dropdown styling */
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Datalist styling */
+datalist {
+    background-color: #1e293b;
+}
+
+/* Toast notification styles */
+.toast-enter {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+.toast-enter-active {
+    transform: translateX(0);
+    opacity: 1;
+    transition: all 0.3s ease-out;
+}
+
+.toast-leave-active {
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.2s ease-in;
+}
+
+/* Disable body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Safe area insets for mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

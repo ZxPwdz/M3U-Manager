@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>M3U Playlist Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0f172a',
+                        secondary: '#1e293b',
+                        tertiary: '#334155',
+                        accent: '#3b82f6',
+                        'accent-hover': '#2563eb',
+                        danger: '#ef4444',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-primary text-slate-50 min-h-screen" x-data="app()" x-init="init()">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="toast.visible"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 :class="toast.type === 'error' ? 'bg-danger' : toast.type === 'warning' ? 'bg-warning' : 'bg-success'"
+                 class="px-4 py-3 rounded-lg shadow-lg text-white flex items-center gap-2 min-w-[250px]">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-secondary border-b border-tertiary sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button x-show="currentView === 'editor'"
+                        @click="goBack()"
+                        class="text-slate-400 hover:text-white p-2 -ml-2 rounded-lg hover:bg-tertiary transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <span x-show="currentView !== 'editor'">M3U Manager</span>
+                    <span x-show="currentView === 'editor'" class="truncate max-w-[200px]" x-text="currentPlaylist?.original_filename"></span>
+                </h1>
+            </div>
+            <!-- Unsaved Changes Indicator -->
+            <div x-show="currentView === 'editor' && hasUnsavedChanges" class="flex items-center gap-2 text-warning text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span class="hidden sm:inline">Unsaved changes</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto">
+        <!-- HOME VIEW -->
+        <div x-show="currentView === 'home'" x-transition class="p-4">
+            <!-- Welcome Message -->
+            <div class="bg-gradient-to-r from-accent/20 to-purple-500/20 border border-accent/30 rounded-2xl p-5 mb-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-accent/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold mb-1">M3U Playlist Manager</h3>
+                        <p class="text-slate-300 text-sm leading-relaxed">Upload and manage your M3U/M3U8 playlists. Edit channels, organize groups, and get direct links for your IPTV programs.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex gap-2 mb-6 bg-secondary rounded-xl p-1">
+                <button @click="activeTab = 'upload'"
+                        :class="activeTab === 'upload' ? 'bg-accent text-white' : 'text-slate-400 hover:text-white'"
+                        class="flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    Upload
+                </button>
+                <button @click="activeTab = 'library'"
+                        :class="activeTab === 'library' ? 'bg-accent text-white' : 'text-slate-400 hover:text-white'"
+                        class="flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    My Playlists
+                    <span x-show="playlists.length > 0" class="bg-tertiary text-xs px-2 py-0.5 rounded-full" x-text="playlists.length"></span>
+                </button>
+            </div>
+
+            <!-- Upload Tab -->
+            <div x-show="activeTab === 'upload'" x-transition>
+                <div @dragover.prevent="dragOver = true"
+                     @dragleave.prevent="dragOver = false"
+                     @drop.prevent="handleDrop($event)"
+                     :class="dragOver ? 'border-accent bg-accent/10 scale-[1.02]' : 'border-tertiary'"
+                     class="border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-200">
+                    <div class="flex flex-col items-center gap-6">
+                        <div class="w-20 h-20 bg-tertiary rounded-full flex items-center justify-center">
+                            <svg class="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-white mb-2">Upload M3U Playlist</h2>
+                            <p class="text-slate-400 mb-1">Drag & drop your .m3u or .m3u8 file here</p>
+                            <p class="text-slate-500 text-sm">or click the button below</p>
+                        </div>
+                        <label class="cursor-pointer bg-accent hover:bg-accent-hover text-white px-8 py-4 rounded-xl font-medium transition-colors text-lg shadow-lg shadow-accent/25 hover:shadow-accent/40">
+                            Choose File
+                            <input type="file" accept=".m3u,.m3u8" @change="handleFileSelect($event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div x-show="uploading" x-transition class="mt-6 bg-secondary rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                        <span class="text-white font-medium">Uploading playlist...</span>
+                    </div>
+                    <div class="bg-tertiary rounded-full h-3 overflow-hidden">
+                        <div class="bg-accent h-full transition-all duration-300 rounded-full" :style="`width: ${uploadProgress}%`"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Library Tab -->
+            <div x-show="activeTab === 'library'" x-transition>
+                <!-- Loading State -->
+                <div x-show="loading" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <template x-for="i in 3">
+                        <div class="bg-secondary rounded-xl p-5 animate-pulse">
+                            <div class="h-5 bg-tertiary rounded w-3/4 mb-4"></div>
+                            <div class="h-4 bg-tertiary rounded w-1/2 mb-3"></div>
+                            <div class="h-4 bg-tertiary rounded w-1/3"></div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && playlists.length === 0" class="text-center py-16">
+                    <div class="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">No playlists yet</h3>
+                    <p class="text-slate-400 mb-6">Upload an M3U file to get started</p>
+                    <button @click="activeTab = 'upload'" class="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                        Upload Playlist
+                    </button>
+                </div>
+
+                <!-- Playlist Grid -->
+                <div x-show="!loading && playlists.length > 0" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <template x-for="playlist in playlists" :key="playlist.id">
+                        <div class="bg-secondary rounded-xl p-5 hover:bg-tertiary/50 transition-all duration-200 group">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-semibold text-white truncate text-lg" x-text="playlist.original_filename"></h3>
+                                    <div class="flex items-center gap-3 mt-2 text-sm text-slate-400">
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                            <span x-text="playlist.channels_count"></span> channels
+                                        </span>
+                                        <span x-text="formatFileSize(playlist.file_size)"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-4" x-text="'Uploaded ' + formatDate(playlist.created_at)"></p>
+                            <div class="flex gap-2">
+                                <button @click="openEditor(playlist.id)"
+                                        class="flex-1 bg-accent hover:bg-accent-hover text-white py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Edit
+                                </button>
+                                <button @click="copyDirectLink(playlist.id)"
+                                        class="bg-tertiary hover:bg-slate-600 text-white py-3 px-4 rounded-xl transition-colors"
+                                        title="Copy Direct Link">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                    </svg>
+                                </button>
+                                <button @click="downloadPlaylist(playlist.id, playlist.original_filename)"
+                                        class="bg-tertiary hover:bg-slate-600 text-white py-3 px-4 rounded-xl transition-colors"
+                                        title="Download">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                </button>
+                                <button @click="confirmDelete(playlist)"
+                                        class="bg-tertiary hover:bg-danger text-white py-3 px-4 rounded-xl transition-colors"
+                                        title="Delete">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDITOR VIEW -->
+        <div x-show="currentView === 'editor'" x-transition class="pb-24">
+            <div x-show="editorLoading" class="flex items-center justify-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            </div>
+
+            <div x-show="!editorLoading && currentPlaylist" class="p-4">
+                <!-- Editor Stats Bar -->
+                <div class="bg-secondary rounded-xl p-4 mb-4 flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm">
+                        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <span><strong x-text="filteredChannels.length"></strong> channels</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                        </svg>
+                        <span><strong x-text="groups.length"></strong> groups</span>
+                    </div>
+                    <div x-show="selectedChannels.length > 0" class="flex items-center gap-2 text-sm text-accent">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span><strong x-text="selectedChannels.length"></strong> selected</span>
+                    </div>
+                </div>
+
+                <!-- Search & Filter Bar -->
+                <div class="bg-secondary rounded-xl p-4 mb-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input type="text"
+                                   x-model="searchQuery"
+                                   @input.debounce.300ms="filterChannels()"
+                                   placeholder="Search channels..."
+                                   class="w-full bg-tertiary border-0 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                        </div>
+                        <select x-model="filterGroup"
+                                @change="filterChannels()"
+                                class="bg-tertiary border-0 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-accent min-w-[150px]">
+                            <option value="">All Groups</option>
+                            <template x-for="group in groups" :key="group">
+                                <option :value="group" x-text="group"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions Bar -->
+                <div x-show="selectedChannels.length > 0"
+                     x-transition
+                     class="bg-accent/20 border border-accent rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium">
+                            <span x-text="selectedChannels.length"></span> selected
+                        </span>
+                        <button @click="selectAllChannels()" class="text-sm text-accent hover:underline">Select All</button>
+                        <button @click="selectedChannels = []" class="text-sm text-slate-400 hover:underline">Clear</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="bulkMoveModal = true" class="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Move to Group
+                        </button>
+                        <button @click="bulkDeleteChannels()" class="bg-danger hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Channel List -->
+                <div class="space-y-2" id="channel-list">
+                    <template x-for="(channel, index) in filteredChannels" :key="channel.id">
+                        <div class="channel-card bg-secondary rounded-xl overflow-hidden transition-all duration-200"
+                             :class="{'ring-2 ring-accent': selectedChannels.includes(channel.id)}">
+                            <div class="flex items-center p-4 gap-3">
+                                <!-- Checkbox -->
+                                <div class="flex-shrink-0">
+                                    <input type="checkbox"
+                                           :checked="selectedChannels.includes(channel.id)"
+                                           @change="toggleChannelSelection(channel.id)"
+                                           class="w-5 h-5 rounded border-slate-600 bg-tertiary text-accent focus:ring-accent cursor-pointer">
+                                </div>
+
+                                <!-- Logo -->
+                                <div class="flex-shrink-0 w-12 h-12 bg-tertiary rounded-lg overflow-hidden flex items-center justify-center">
+                                    <img x-show="channel.tvg_logo"
+                                         :src="channel.tvg_logo"
+                                         :alt="channel.name"
+                                         class="w-full h-full object-cover"
+                                         @error="$el.style.display='none'">
+                                    <svg x-show="!channel.tvg_logo" class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+
+                                <!-- Channel Info -->
+                                <div class="flex-1 min-w-0 cursor-pointer" @click="expandChannel(channel)">
+                                    <h3 class="font-medium text-white truncate" x-text="channel.name"></h3>
+                                    <p class="text-slate-400 text-sm truncate" x-text="channel.group_title || 'No group'"></p>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex-shrink-0 flex gap-1">
+                                    <button @click="openEditModal(channel)"
+                                            class="p-2.5 hover:bg-tertiary rounded-lg transition-colors"
+                                            title="Edit">
+                                        <svg class="w-5 h-5 text-slate-400 hover:text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="deleteChannel(channel.id)"
+                                            class="p-2.5 hover:bg-danger/20 rounded-lg transition-colors"
+                                            title="Delete">
+                                        <svg class="w-5 h-5 text-slate-400 hover:text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Expanded Details -->
+                            <div x-show="expandedChannel === channel.id"
+                                 x-transition
+                                 class="px-4 pb-4 border-t border-tertiary">
+                                <div class="pt-3 space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-slate-500">Stream URL:</span>
+                                        <p class="text-slate-300 break-all font-mono text-xs mt-1 bg-tertiary p-2 rounded" x-text="channel.stream_url"></p>
+                                    </div>
+                                    <div x-show="channel.tvg_id" class="flex gap-2">
+                                        <span class="text-slate-500">TVG ID:</span>
+                                        <span class="text-slate-300" x-text="channel.tvg_id"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="filteredChannels.length === 0 && !editorLoading" class="text-center py-16">
+                    <svg class="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-slate-400 text-lg">No channels found</p>
+                    <p class="text-slate-500 text-sm mt-1">Try adjusting your search or filter</p>
+                </div>
+            </div>
+
+            <!-- Fixed Bottom Bar with Save Button -->
+            <div class="fixed bottom-0 left-0 right-0 bg-secondary border-t border-tertiary p-4 z-30">
+                <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                    <button @click="openAddModal()"
+                            class="bg-tertiary hover:bg-slate-600 text-white py-3 px-5 rounded-xl font-medium transition-colors flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Channel
+                    </button>
+                    <button @click="savePlaylist()"
+                            :class="hasUnsavedChanges ? 'bg-success hover:bg-green-600 animate-pulse' : 'bg-accent hover:bg-accent-hover'"
+                            class="text-white py-3 px-8 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg">
+                        <svg x-show="!saving" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <div x-show="saving" class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span x-text="saving ? 'Saving...' : (hasUnsavedChanges ? 'Save Changes' : 'Saved')"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="deleteModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+         @click.self="deleteModal = false">
+        <div class="bg-secondary rounded-2xl p-6 max-w-sm w-full" x-transition>
+            <div class="w-12 h-12 bg-danger/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-center mb-2">Delete Playlist?</h3>
+            <p class="text-slate-400 text-center mb-6">Are you sure you want to delete "<span x-text="deleteTarget?.original_filename" class="text-white"></span>"? This cannot be undone.</p>
+            <div class="flex gap-3">
+                <button @click="deleteModal = false" class="flex-1 bg-tertiary hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
+                    Cancel
+                </button>
+                <button @click="deletePlaylist()" class="flex-1 bg-danger hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unsaved Changes Warning Modal -->
+    <div x-show="unsavedWarningModal"
+         x-transition
+         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+         @click.self="unsavedWarningModal = false">
+        <div class="bg-secondary rounded-2xl p-6 max-w-sm w-full">
+            <div class="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-center mb-2">Unsaved Changes</h3>
+            <p class="text-slate-400 text-center mb-6">You have unsaved changes. Do you want to save before leaving?</p>
+            <div class="flex flex-col gap-2">
+                <button @click="saveAndGoBack()" class="w-full bg-success hover:bg-green-600 text-white py-3 rounded-xl font-medium transition-colors">
+                    Save & Exit
+                </button>
+                <button @click="discardAndGoBack()" class="w-full bg-tertiary hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
+                    Discard Changes
+                </button>
+                <button @click="unsavedWarningModal = false" class="w-full text-slate-400 hover:text-white py-2 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Channel Edit/Add Modal -->
+    <div x-show="channelModal"
+         x-transition
+         class="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-50"
+         @click.self="channelModal = false">
+        <div class="bg-secondary rounded-t-2xl md:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-semibold mb-6" x-text="editingChannel ? 'Edit Channel' : 'Add New Channel'"></h3>
+            <form @submit.prevent="saveChannel()" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">Channel Name *</label>
+                    <input type="text" x-model="channelForm.name" required
+                           placeholder="e.g., BBC One HD"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">Stream URL *</label>
+                    <input type="url" x-model="channelForm.stream_url" required
+                           placeholder="http://example.com/stream.m3u8"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">Group / Category</label>
+                    <input type="text" x-model="channelForm.group_title" list="groups-list"
+                           placeholder="e.g., Sports, Movies, News"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                    <datalist id="groups-list">
+                        <template x-for="group in groups" :key="group">
+                            <option :value="group"></option>
+                        </template>
+                    </datalist>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">Logo URL</label>
+                    <input type="url" x-model="channelForm.tvg_logo"
+                           placeholder="https://example.com/logo.png"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">TVG ID (for EPG)</label>
+                    <input type="text" x-model="channelForm.tvg_id"
+                           placeholder="e.g., bbc1.uk"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" @click="channelModal = false"
+                            class="flex-1 bg-tertiary hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex-1 bg-accent hover:bg-accent-hover text-white py-3 rounded-xl font-medium transition-colors">
+                        <span x-text="editingChannel ? 'Update Channel' : 'Add Channel'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Move Modal -->
+    <div x-show="bulkMoveModal"
+         x-transition
+         class="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-50"
+         @click.self="bulkMoveModal = false">
+        <div class="bg-secondary rounded-t-2xl md:rounded-2xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-semibold mb-6">Move to Group</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">Select or enter group name</label>
+                    <input type="text" x-model="bulkMoveGroup" list="groups-list"
+                           class="w-full bg-tertiary border-0 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-accent"
+                           placeholder="Enter group name">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button @click="bulkMoveModal = false"
+                            class="flex-1 bg-tertiary hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="bulkMoveChannels()"
+                            class="flex-1 bg-accent hover:bg-accent-hover text-white py-3 rounded-xl font-medium transition-colors">
+                        Move Channels
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
